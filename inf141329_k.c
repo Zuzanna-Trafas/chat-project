@@ -36,6 +36,11 @@ void viewGroupMembers();
 void joinGroup();
 void leaveGroup();
 void blockMessages(blockedUser *blockedUsers, blockedGroup *blockedGroups, int *blockedUsersNumber, int *blockedGroupsNumber);
+void blockGroupMessages(blockedGroup  *blockedGroups, int *blockedGroupsNumber);
+void blockUserMessages(blockedUser *blockedUsers, int *blockedUsersNumber);
+void unblockGroupMessages(blockedGroup  *blockedGroups, int *blockedGroupsNumber);
+void unblockUserMessages(blockedUser *blockedUsers, int *blockedUsersNumber);
+
 
 void readString(char text[48]);
 void readMessage(char message[2048]);
@@ -85,7 +90,7 @@ int main() {
                        "  5 - join a group,\n"
                        "  6 - view group members,\n"
                        "  7 - leave a group,\n"
-                       "  8 - block a user or group\n"
+                       "  8 - block/unblock a user/group\n"
                        "  9 - logout\n"
                        "  0 - close\n\n");
 
@@ -386,72 +391,144 @@ void leaveGroup() {
 }
 
 void blockMessages(blockedUser *blockedUsers, blockedGroup *blockedGroups, int *blockedUsersNumber, int *blockedGroupsNumber) {
-    printf("Do you want to block a user (u) or group (g)?\n");
-    char userGroup;
-    userGroup = getchar();
-    if (userGroup == '\n') {
+    printf("Would you like to block (b) or unblock (u)?\n");
+    char blockChar;
+    blockChar = getchar();
+    if (blockChar == '\n') {
+        blockChar = getchar();
+    }
+    if (blockChar == 'b') {
+        printf("Do you want to block a user (u) or group (g)?\n");
+        char userGroup;
         userGroup = getchar();
-    }
-    command command1 = {1, 0};
-    if (userGroup == 'g') {
-        command1.c = 11;
-        msgsnd(userQueue, &command1, sizeof(command) - sizeof(long), 0);
-        printf("Which group's messages would you like to block?\n");
-        char groupName[48];
-        readString(groupName);
-        semop(semBlockedGroups, &semClose, 1);
-        for (int i = 0; i < *blockedGroupsNumber; i++) {
-            if (strcmp(blockedGroups[i].name, groupName) == 0) {
-                printf("You are already blocking this group!\n");
-                semop(semBlockedGroups, &semOpen, 1);
-                return;
-            }
+        if (userGroup == '\n') {
+            userGroup = getchar();
         }
-        semop(semBlockedGroups, &semOpen, 1);
-        sendReceiver sendReceiver1 = {2, "", 0};
-        strcpy(sendReceiver1.receiver, groupName);
-        msgsnd(userQueue, &sendReceiver1, sizeof(sendReceiver) - sizeof(long), 0);
-        msgrcv(userQueue, &sendReceiver1, sizeof(sendReceiver) - sizeof(long), 3, 0);
-        if (sendReceiver1.isValid == 0) {
-            printf("Group %s doesn't exist.\n", groupName);
-            return;
+
+        if (userGroup == 'g') {
+            blockGroupMessages(blockedGroups, blockedGroupsNumber);
+        } else if (userGroup == 'u') {
+            blockUserMessages(blockedUsers, blockedUsersNumber);
+        } else {
+            printf("Please choose u (user) or g (group)\n");
         }
-        semop(semBlockedGroups, &semClose, 1);
-        strcpy(blockedGroups[*blockedGroupsNumber].name, groupName);
-        *blockedGroupsNumber = *blockedGroupsNumber + 1;
-        semop(semBlockedGroups, &semOpen, 1);
-        printf("You are now blocking messages from %s\n", groupName);
-    } else if (userGroup == 'u') {
-        command1.c = 10;
-        msgsnd(userQueue, &command1, sizeof(command) - sizeof(long), 0);
-        printf("Which user's messages would you like to block?\n");
-        char username[32];
-        readString(username);
-        semop(semBlockedUsers, &semClose, 1);
-        for (int i = 0; i < *blockedUsersNumber; i++) {
-            if (strcmp(blockedUsers[i].username, username) == 0) {
-                printf("You are already blocking this user!\n");
-                semop(semBlockedUsers, &semOpen, 1);
-                return;
-            }
+    } else if (blockChar == 'u') {
+        printf("Do you want to unblock a user (u) or group (g)?\n");
+        char userGroup;
+        userGroup = getchar();
+        if (userGroup == '\n') {
+            userGroup = getchar();
         }
-        semop(semBlockedUsers, &semOpen, 1);
-        sendReceiver sendReceiver1 = {2, "", 0};
-        strcpy(sendReceiver1.receiver, username);
-        msgsnd(userQueue, &sendReceiver1, sizeof(sendReceiver) - sizeof(long), 0);
-        msgrcv(userQueue, &sendReceiver1, sizeof(sendReceiver) - sizeof(long), 3, 0);
-        if (sendReceiver1.isValid == 0) {
-            printf("User %s doesn't exist.\n", username);
-            return;
+        if (userGroup == 'g') {
+            unblockGroupMessages(blockedGroups, blockedGroupsNumber);
+        } else if (userGroup == 'u') {
+            unblockUserMessages(blockedUsers, blockedUsersNumber);
+        } else {
+            printf("Please choose u (user) or g (group)\n");
         }
-        semop(semBlockedUsers, &semClose, 1);
-        strcpy(blockedUsers[*blockedUsersNumber].username, username);
-        *blockedUsersNumber = *blockedUsersNumber + 1;
-        semop(semBlockedUsers, &semOpen, 1);
-        printf("You are now blocking messages from %s\n", username);
     } else {
-        printf("Please choose u (group) or g (user)\n");
+        printf("Please choose b (block) or u (unblock)\n");
     }
+}
+
+void blockGroupMessages(blockedGroup  *blockedGroups, int *blockedGroupsNumber) {
+    command command1 = {1, 11};
+    msgsnd(userQueue, &command1, sizeof(command) - sizeof(long), 0);
+    printf("Which group's messages would you like to block?\n");
+    char groupName[48];
+    readString(groupName);
+    semop(semBlockedGroups, &semClose, 1);
+    for (int i = 0; i < *blockedGroupsNumber; i++) {
+        if (strcmp(blockedGroups[i].name, groupName) == 0) {
+            printf("You are already blocking this group!\n");
+            semop(semBlockedGroups, &semOpen, 1);
+            return;
+        }
+    }
+    semop(semBlockedGroups, &semOpen, 1);
+    sendReceiver sendReceiver1 = {2, "", 0};
+    strcpy(sendReceiver1.receiver, groupName);
+    msgsnd(userQueue, &sendReceiver1, sizeof(sendReceiver) - sizeof(long), 0);
+    msgrcv(userQueue, &sendReceiver1, sizeof(sendReceiver) - sizeof(long), 3, 0);
+    if (sendReceiver1.isValid == 0) {
+        printf("Group %s doesn't exist.\n", groupName);
+        return;
+    }
+    semop(semBlockedGroups, &semClose, 1);
+    strcpy(blockedGroups[*blockedGroupsNumber].name, groupName);
+    *blockedGroupsNumber = *blockedGroupsNumber + 1;
+    semop(semBlockedGroups, &semOpen, 1);
+    printf("You are now blocking messages from %s\n", groupName);
+}
+
+void blockUserMessages(blockedUser *blockedUsers, int *blockedUsersNumber) {
+    command command1 = {1, 10};
+    msgsnd(userQueue, &command1, sizeof(command) - sizeof(long), 0);
+    printf("Which user's messages would you like to block?\n");
+    char username[32];
+    readString(username);
+    semop(semBlockedUsers, &semClose, 1);
+    for (int i = 0; i < *blockedUsersNumber; i++) {
+        if (strcmp(blockedUsers[i].username, username) == 0) {
+            printf("You are already blocking this user!\n");
+            semop(semBlockedUsers, &semOpen, 1);
+            return;
+        }
+    }
+    semop(semBlockedUsers, &semOpen, 1);
+    sendReceiver sendReceiver1 = {2, "", 0};
+    strcpy(sendReceiver1.receiver, username);
+    msgsnd(userQueue, &sendReceiver1, sizeof(sendReceiver) - sizeof(long), 0);
+    msgrcv(userQueue, &sendReceiver1, sizeof(sendReceiver) - sizeof(long), 3, 0);
+    if (sendReceiver1.isValid == 0) {
+        printf("User %s doesn't exist.\n", username);
+        return;
+    }
+    semop(semBlockedUsers, &semClose, 1);
+    strcpy(blockedUsers[*blockedUsersNumber].username, username);
+    *blockedUsersNumber = *blockedUsersNumber + 1;
+    semop(semBlockedUsers, &semOpen, 1);
+    printf("You are now blocking messages from %s\n", username);
+}
+
+void unblockGroupMessages(blockedGroup  *blockedGroups, int *blockedGroupsNumber) {
+    printf("Which group's messages would you like to unblock?\n");
+    char groupName[48];
+    readString(groupName);
+    semop(semBlockedGroups, &semClose, 1);
+    for (int i = 0; i < *blockedGroupsNumber; i++) {
+        if (strcmp(blockedGroups[i].name, groupName) == 0) {
+            printf("Group %s unblocked.\n", groupName);
+            for (int j = i; j < *blockedGroupsNumber - 1; j++) {
+                strcpy(blockedGroups[j].name, blockedGroups[j+1].name);
+            }
+            *blockedGroupsNumber -= 1;
+            semop(semBlockedGroups, &semOpen, 1);
+            return;
+        }
+    }
+    printf("You are not blocking this group!\n");
+    semop(semBlockedGroups, &semOpen, 1);
+}
+
+void unblockUserMessages(blockedUser *blockedUsers, int *blockedUsersNumber) {
+    printf("Which user's messages would you like to unblock?\n");
+    char username[32];
+    readString(username);
+    semop(semBlockedUsers, &semClose, 1);
+    for (int i = 0; i < *blockedUsersNumber; i++) {
+        if (strcmp(blockedUsers[i].username, username) == 0) {
+            printf("User %s unblocked.\n", username);
+            for (int j = i; j < *blockedUsersNumber - 1; j++) {
+                strcpy(blockedUsers[j].username, blockedUsers[j+1].username);
+            }
+            *blockedUsersNumber -= 1;
+            semop(semBlockedUsers, &semOpen, 1);
+            return;
+        }
+    }
+    printf("You are not blocking this user!\n");
+    semop(semBlockedUsers, &semOpen, 1);
 }
 
 void readString(char text[48]) {

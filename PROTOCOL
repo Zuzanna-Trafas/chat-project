@@ -1,0 +1,12 @@
+Komunikacja odbywa sie za pomoca kolejek komunikatow - kolejki ipc, ktora odpowiada za zalogowanie uzytkownika i odbieranie przez niego wiadomosci oraz kolejek userQueue (clientQueue), ktore odpowiadaja za komunikacje miedzy uzytkownikiem a serwerem. Klient jest realizowany wspolbieznie, jeden proces komunikuje sie z serwerem, a drugi odbiera wiadomosci. Serwer rowniez jest wspolbiezny, proces rodzic loguje kolejnych uzytkownikow, a procesy dzieci odpowiadaja za komunikacje z konkretnymi uzytkownikami.
+
+Struktury do komunikacji:
+
+command - wysylane z mtype=1, wysyla do serwera informacje o tym jakie polecenie chcemy przetworzyc.
+loginInfo - wysyla do serwera login i haslo podane przez uzytkownika
+sendUserId - wysyla do uzytkownika jego id - jezeli jest mniejsze lub rowne 0, to znaczy ze logowanie sie nie udalo. Do tego wysylamy liczbe prob zalogowania do danego konta, jezeli przekracza 3, to konto zostaje zablokowane
+message - sluzy do przesylania wiadomosci, zawiera rowniez informacje o nadawcy oraz grupie, do ktorej ma zostac wyslana ("" jezeli do uzytkownika)
+sendReceiver - wysyla odbiorce (uzytkownika lub grupe), tak zeby serwer sprawdzil czy istnieje on w systemie lub dla uzytkownika, czy jest on aktywny. Odsyla informacje isValid.
+activeUserCount - uzywane do zliczania aktywnych uzytkownikow, liczby grup lub liczby czlonkow danej grupy. Informacja ta jest wysylana do uzytkownika, aby odebral tyle nazw ile zostanie wyslane.
+sendUsername - wysyla nazwe uzytkownika od klienta
+sendGroupname - wysyla nazwe grupy do klienta

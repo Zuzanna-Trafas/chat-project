@@ -26,16 +26,16 @@ struct sembuf semClose = {0, -1, 0};
 
 void closeQueues();
 int login(int ipc);
-void sendMessage(int userQueue);
-void sendGroupMessage(int userQueue);
-void getMessage(int ipc, int userId, blockedUser *blockedUsers, blockedGroup *blockedGroups, int *blockedUsersNumber, int *blockedGroupsNumber, int semBlockedUsers, int semBlockedGroups);
-void logout(int userQueue, int *loggedIn);
-void viewActive(int userQueue);
-void viewGroups(int userQueue);
-void viewGroupMembers(int userQueue);
-void joinGroup(int userQueue);
-void leaveGroup(int userQueue);
-void blockMessages(int userQueue, blockedUser *blockedUsers, blockedGroup *blockedGroups, int *blockedUsersNumber, int *blockedGroupsNumber, int semBlockedUsers, int semBlockedGroups);
+void sendMessage();
+void sendGroupMessage();
+void getMessage(int ipc, int userId, blockedUser *blockedUsers, blockedGroup *blockedGroups, int *blockedUsersNumber, int *blockedGroupsNumber);
+void logout(int *loggedIn);
+void viewActive();
+void viewGroups();
+void viewGroupMembers();
+void joinGroup();
+void leaveGroup();
+void blockMessages(blockedUser *blockedUsers, blockedGroup *blockedGroups, int *blockedUsersNumber, int *blockedGroupsNumber);
 
 void readString(char text[48]);
 void readMessage(char message[2048]);
@@ -96,31 +96,31 @@ int main() {
                 }
                 switch(getCommand) {
                     case '1':
-                        sendMessage(userQueue);
+                        sendMessage();
                         break;
                     case '2':
-                        sendGroupMessage(userQueue);
+                        sendGroupMessage();
                         break;
                     case '3':
-                        viewActive(userQueue);
+                        viewActive();
                         break;
                     case '4':
-                        viewGroups(userQueue);
+                        viewGroups();
                         break;
                     case '5':
-                        joinGroup(userQueue);
+                        joinGroup();
                         break;
                     case '6':
-                        viewGroupMembers(userQueue);
+                        viewGroupMembers();
                         break;
                     case '7':
-                        leaveGroup(userQueue);
+                        leaveGroup();
                         break;
                     case '8':
-                        blockMessages(userQueue, blockedUsers, blockedGroups, blockedUsersNumber, blockedGroupsNumber, semBlockedUsers, semBlockedGroups);
+                        blockMessages(blockedUsers, blockedGroups, blockedUsersNumber, blockedGroupsNumber);
                         break;
                     case '9':
-                        logout(userQueue, &loggedIn);
+                        logout(&loggedIn);
                         break;
                     case '0':
                         closeQueues();
@@ -132,7 +132,7 @@ int main() {
             }
         } else {
             while (1) {
-                getMessage(ipc, userId, blockedUsers, blockedGroups, blockedUsersNumber, blockedGroupsNumber, semBlockedUsers, semBlockedGroups);
+                getMessage(ipc, userId, blockedUsers, blockedGroups, blockedUsersNumber, blockedGroupsNumber);
             }
         }
     }
@@ -181,7 +181,7 @@ int login(int ipc) {
     return userId;
 }
 
-void sendMessage(int userQueue) {
+void sendMessage() {
     command command1 = {1, 1};
     msgsnd(userQueue, &command1, sizeof(command) - sizeof(long), 0);
     sendReceiver receiver1 = {2, "", 0};
@@ -206,7 +206,7 @@ void sendMessage(int userQueue) {
     msgsnd(userQueue, &newMessage, sizeof(message) - sizeof(long), 0);
 }
 
-void sendGroupMessage(int userQueue) {
+void sendGroupMessage() {
     command command1 = {1, 2};
     msgsnd(userQueue, &command1, sizeof(command) - sizeof(long), 0);
     sendReceiver receiver1 = {2, "", 0};
@@ -229,7 +229,7 @@ void sendGroupMessage(int userQueue) {
     msgsnd(userQueue, &newMessage, sizeof(message) - sizeof(long), 0);
 }
 
-void getMessage(int ipc, int userId, blockedUser *blockedUsers, blockedGroup *blockedGroups, int *blockedUsersNumber, int *blockedGroupsNumber, int semBlockedUsers, int semBlockedGroups) {
+void getMessage(int ipc, int userId, blockedUser *blockedUsers, blockedGroup *blockedGroups, int *blockedUsersNumber, int *blockedGroupsNumber) {
     message getMessage = {};
     msgrcv(ipc, &getMessage, sizeof(message) - sizeof(long), 1000 + userId, 0);
     if (strcmp(getMessage.sender, "") == 0) {
@@ -285,7 +285,7 @@ void getMessage(int ipc, int userId, blockedUser *blockedUsers, blockedGroup *bl
     }
 }
 
-void logout(int userQueue, int *loggedIn) {
+void logout(int *loggedIn) {
     command command1 = {1, 9};
     msgsnd(userQueue, &command1, sizeof(command) - sizeof(long), 0);
     printf("Bye!\n\n");
@@ -298,7 +298,7 @@ void logout(int userQueue, int *loggedIn) {
     shmctl(blockedGroupsNumberShmid, IPC_RMID, NULL);
 }
 
-void viewActive(int userQueue) {
+void viewActive() {
     command command1 = {1, 3};
     msgsnd(userQueue, &command1, sizeof(command) - sizeof(long), 0);
     activeUsersCount activeUsersCount1 = {};
@@ -311,7 +311,7 @@ void viewActive(int userQueue) {
     printf("\n");
 }
 
-void viewGroups(int userQueue) {
+void viewGroups() {
     command command1 = {1, 4};
     msgsnd(userQueue, &command1, sizeof(command) - sizeof(long), 0);
     activeUsersCount activeUsersCount1 = {};
@@ -324,7 +324,7 @@ void viewGroups(int userQueue) {
     printf("\n");
 }
 
-void viewGroupMembers(int userQueue) {
+void viewGroupMembers() {
     command command1 = {1, 6};
     msgsnd(userQueue, &command1, sizeof(command) - sizeof(long), 0);
     printf("Which group's members would you like to see?\n");
@@ -347,7 +347,7 @@ void viewGroupMembers(int userQueue) {
     printf("\n");
 }
 
-void joinGroup(int userQueue) {
+void joinGroup() {
     command command1 = {1, 5};
     msgsnd(userQueue, &command1, sizeof(command) - sizeof(long), 0);
     sendReceiver sendReceiver1 = {1, "", 0};
@@ -366,7 +366,7 @@ void joinGroup(int userQueue) {
     }
 }
 
-void leaveGroup(int userQueue) {
+void leaveGroup() {
     command command1 = {1, 7};
     msgsnd(userQueue, &command1, sizeof(command) - sizeof(long), 0);
     sendReceiver sendReceiver1 = {1, "", 0};
@@ -385,26 +385,65 @@ void leaveGroup(int userQueue) {
     }
 }
 
-void blockMessages(int userQueue, blockedUser *blockedUsers, blockedGroup *blockedGroups, int *blockedUsersNumber, int *blockedGroupsNumber, int semBlockedUsers, int semBlockedGroups) {
-    printf("Do you want to block a group (g) or a user (u)?\n");
+void blockMessages(blockedUser *blockedUsers, blockedGroup *blockedGroups, int *blockedUsersNumber, int *blockedGroupsNumber) {
+    printf("Do you want to block a user (u) or group (g)?\n");
     char userGroup;
     userGroup = getchar();
     if (userGroup == '\n') {
         userGroup = getchar();
     }
+    command command1 = {1, 0};
     if (userGroup == 'g') {
+        command1.c = 11;
+        msgsnd(userQueue, &command1, sizeof(command) - sizeof(long), 0);
         printf("Which group's messages would you like to block?\n");
         char groupName[48];
         readString(groupName);
+        semop(semBlockedGroups, &semClose, 1);
+        for (int i = 0; i < *blockedGroupsNumber; i++) {
+            if (strcmp(blockedGroups[i].name, groupName) == 0) {
+                printf("You are already blocking this group!\n");
+                semop(semBlockedGroups, &semOpen, 1);
+                return;
+            }
+        }
+        semop(semBlockedGroups, &semOpen, 1);
+        sendReceiver sendReceiver1 = {2, "", 0};
+        strcpy(sendReceiver1.receiver, groupName);
+        msgsnd(userQueue, &sendReceiver1, sizeof(sendReceiver) - sizeof(long), 0);
+        msgrcv(userQueue, &sendReceiver1, sizeof(sendReceiver) - sizeof(long), 3, 0);
+        if (sendReceiver1.isValid == 0) {
+            printf("Group %s doesn't exist.\n", groupName);
+            return;
+        }
         semop(semBlockedGroups, &semClose, 1);
         strcpy(blockedGroups[*blockedGroupsNumber].name, groupName);
         *blockedGroupsNumber = *blockedGroupsNumber + 1;
         semop(semBlockedGroups, &semOpen, 1);
         printf("You are now blocking messages from %s\n", groupName);
     } else if (userGroup == 'u') {
+        command1.c = 10;
+        msgsnd(userQueue, &command1, sizeof(command) - sizeof(long), 0);
         printf("Which user's messages would you like to block?\n");
         char username[32];
         readString(username);
+        semop(semBlockedUsers, &semClose, 1);
+        for (int i = 0; i < *blockedUsersNumber; i++) {
+            if (strcmp(blockedUsers[i].username, username) == 0) {
+                printf("You are already blocking this user!\n");
+                semop(semBlockedUsers, &semOpen, 1);
+                return;
+            }
+        }
+        semop(semBlockedUsers, &semOpen, 1);
+        sendReceiver sendReceiver1 = {2, "", 0};
+        strcpy(sendReceiver1.receiver, username);
+        msgsnd(userQueue, &sendReceiver1, sizeof(sendReceiver) - sizeof(long), 0);
+        msgrcv(userQueue, &sendReceiver1, sizeof(sendReceiver) - sizeof(long), 3, 0);
+        if (sendReceiver1.isValid == 0) {
+            printf("User %s doesn't exist.\n", username);
+            return;
+        }
         semop(semBlockedUsers, &semClose, 1);
         strcpy(blockedUsers[*blockedUsersNumber].username, username);
         *blockedUsersNumber = *blockedUsersNumber + 1;

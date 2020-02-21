@@ -9,6 +9,6 @@ u gpiotrowska 123 7
 u hfilipiak 123 8
 u imrowczynska 123 9
 u jokroj 123 10
-g zwierzolki 1 4 6 10
+g zwierzolki 1 2 3 4
 g sudoku 2 4 6 9
-g koniary 1 50 10
+g statystycy 1 50

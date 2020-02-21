@@ -1,0 +1,9 @@
+Wszystkie pliki musza znajdowac sie w jednym folderze. Z terminala przechodzimy do folderu gdzie znajduje sie projekt i wykonujemy "make", aby skompilowac plik klienta oraz serwera. Po wykonaniu komend ./klient i ./serwer uruchamiamy programy. Z zalozenia serwer powinien byc odpalony na poczatku.
+Aby sie zalogowac nalezy uzyc loginu i hasla z pliku config, np akowalski abc lub bwawrzyniak 123
+Przykladowa grupa to zwierzolki, do ktorej naleza akowalski, bwawrzyniak, cgrenda oraz dfilipiak
+
+inf141329_k.c
+Otwieramy kolejke komunikatow "ipc", ktora sluzy do logowania oraz odbierania wiadomosci. Po zalogowaniu tworzona jest nowa kolejka, za pomoca ktorej komunikujemy sie z serwerem. Uzywamy forka, proces-rodzic wykonuje polecenia, proces dziecko odbiera wiadomosci. W momencie wybrania '0' - zamkniecia aplikacji lub '9' - wylogowania, sprzatamy pamieci wspoldzielone i semafory oraz wysylamy wiadomosc do serwera, ktory wysyla komunikat do procesu-dziecka, aby rowniez sie zakonczyl.
+
+inf141329_s.c
+Wczytujemy uzytkownikow i grupy oraz otwieramy kolejke komunikatow "ipc", ktora czeka na zalogowanie uzytkownikow. Gdy uzytkownik poprawnie sie zaloguje, tworzymy nowy proces forkiem i otwieramy osobna kolejke komunikatow dla tego klienta. Poszczegolne polecenia obslugujemy za pomoca switch'a. Przechwytujemy sygnal SIGINT (ctrl + c), w momencie przechywcenia zamykamy wszystkie kolejki, pamieci wspoldzielone i semafory i zamykamy proces glowny i wszystkie jego procesy potomne.

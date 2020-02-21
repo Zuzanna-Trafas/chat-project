@@ -47,6 +47,11 @@ void joinGroup(int clientQueue, int clientId, group *groups, int groupNumber, in
 
 void leaveGroup(int clientQueue, int clientId, group *groups, int groupNumber, int semGroups);
 
+void blockUser(int clientQueue, user *users, int userNumber, int semUsers);
+
+void blockGroup(int clientQueue, group *groups, int groupNumber, int semGroups);
+
+
 int main() {
     signal(SIGINT, closeQueues);
 
@@ -128,6 +133,12 @@ int main() {
                             closeClient(ipc, clientId);
                         case 9:
                             logout(ipc, users, userNumber, clientId, semUsers);
+                            break;
+                        case 10:
+                            blockUser(clientQueue, users, userNumber, semUsers);
+                            break;
+                        case 11:
+                            blockGroup(clientQueue, groups, groupNumber, semGroups);
                             break;
                     }
                 }
@@ -447,6 +458,7 @@ void sendGroupMembers(int clientQueue, user *users, group *groups, int userNumbe
     if (activeUsersCount1.count == 0) {
         printf("Group %s not found.\n", getGroupName1.groupName);
         msgsnd(clientQueue, &activeUsersCount1, sizeof(activeUsersCount) - sizeof(long), 0);
+        semop(semGroups, &semOpen, 1);
         return;
     }
     msgsnd(clientQueue, &activeUsersCount1, sizeof(activeUsersCount) - sizeof(long), 0);
@@ -539,6 +551,46 @@ void leaveGroup(int clientQueue, int clientId, group *groups, int groupNumber, i
     }
     semop(semGroups, &semOpen, 1);
     printf("User with id: %d deleted from group %s\n", clientId, getReceiver.receiver);
+}
+
+void blockUser(int clientQueue, user *users, int userNumber, int semUsers) {
+    sendReceiver sendReceiver1 = {};
+    msgrcv(clientQueue, &sendReceiver1, sizeof(sendReceiver) - sizeof(long), 2, 0);
+    sendReceiver1.mtype = 3;
+    semop(semUsers, &semClose, 1);
+    for (int u = 0; u < userNumber; u++) {
+        if (strcmp(users[u].login, sendReceiver1.receiver) == 0) {
+            sendReceiver1.isValid = 1;
+            break;
+        }
+    }
+    semop(semUsers, &semOpen, 1);
+    msgsnd(clientQueue, &sendReceiver1, sizeof(sendReceiver) - sizeof(long), 0);
+    if (sendReceiver1.isValid == 0) {
+        printf("User %s doesn't exist.\n", sendReceiver1.receiver);
+    } else {
+        printf("User %s blocked.\n", sendReceiver1.receiver);
+    }
+}
+
+void blockGroup(int clientQueue, group *groups, int groupNumber, int semGroups) {
+    sendReceiver sendReceiver1 = {};
+    msgrcv(clientQueue, &sendReceiver1, sizeof(sendReceiver) - sizeof(long), 2, 0);
+    sendReceiver1.mtype = 3;
+    semop(semGroups, &semClose, 1);
+    for (int g = 0; g < groupNumber; g++) {
+        if (strcmp(groups[g].name, sendReceiver1.receiver) == 0) {
+            sendReceiver1.isValid = 1;
+            break;
+        }
+    }
+    semop(semGroups, &semOpen, 1);
+    msgsnd(clientQueue, &sendReceiver1, sizeof(sendReceiver) - sizeof(long), 0);
+    if (sendReceiver1.isValid == 0) {
+        printf("Group %s doesn't exist.\n", sendReceiver1.receiver);
+    } else {
+        printf("Group %s blocked.\n", sendReceiver1.receiver);
+    }
 }
 
 void closeClient(int ipc, int clientId) {
